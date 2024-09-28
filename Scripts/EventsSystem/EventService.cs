@@ -89,5 +89,9 @@ namespace EventsSystem
         {
             m_SaveManager.SaveEvents(m_Events);
         }
+        
+        public void TrackEvent(string type, string data) {
+            m_Events.Add(new Event(type, data));
+        }
     }
 }
