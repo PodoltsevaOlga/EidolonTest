@@ -26,7 +26,7 @@ namespace EventsSystem
         private float m_Timer = 0.0f;
 
         private List<Event> m_Events = new();
-        private Dictionary<string, EventsJson> m_WaitingResponseEvents = new();
+        private Dictionary<(string RequestBody, float Time), EventsJson> m_WaitingResponseEvents = new();
 
         private void Awake()
         {
@@ -57,13 +57,14 @@ namespace EventsSystem
             var events = new EventsJson() {Events = m_Events.ToArray()};
             string requestBody = JsonConvert.SerializeObject(events);
         
-            m_WaitingResponseEvents.Add(requestBody, events);
+            float time = Time.realtimeSinceStartup;
+            m_WaitingResponseEvents.Add((requestBody, time), events);
             m_Events.Clear();
-
-            StartCoroutine(SendRequestCoroutine(requestBody));
+            
+            StartCoroutine(SendRequestCoroutine(requestBody, time));
         }
     
-        IEnumerator SendRequestCoroutine(string requestBody)
+        IEnumerator SendRequestCoroutine(string requestBody, float time)
         {
             using (UnityWebRequest webRequest = UnityWebRequest.Post(m_ServerUrl, requestBody))
             {
@@ -72,10 +73,10 @@ namespace EventsSystem
                 if (webRequest.result != UnityWebRequest.Result.Success)
                 {
                     Debug.LogError(webRequest.error);
-                    if (m_WaitingResponseEvents.TryGetValue(requestBody, out var events))
+                    if (m_WaitingResponseEvents.TryGetValue((requestBody, time), out var events))
                     {
                         m_Events = m_Events.Concat(events.Events).ToList();
-                        m_WaitingResponseEvents.Remove(requestBody);
+                        m_WaitingResponseEvents.Remove((requestBody, time));
                     }
                 }
                 else
